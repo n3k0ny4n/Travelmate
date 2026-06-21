@@ -6,7 +6,7 @@ dist/
 *.sqlite-shm
 *.sqlite-wal
 apps/server/data/
-prisma/:memory:
-prisma/data/
+apps/server/prisma/:memory:
+apps/server/prisma/data/
 .DS_Store
 *.log
