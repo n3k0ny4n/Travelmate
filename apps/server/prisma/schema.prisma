@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  role      String   @default("VIEWER")
+  createdAt DateTime @default(now())
+  magicLinkTokens MagicLinkToken[]
+  sessions  Session[]
+  trips     Trip[]   @relation("CreatedBy")
+}
+
+model MagicLinkToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  userAgent String?
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Trip {
+  id           String   @id @default(cuid())
+  name         String
+  startDate    DateTime
+  endDate      DateTime
+  description  String?
+  coverImageId String?
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  creator      User     @relation("CreatedBy", fields: [createdBy], references: [id])
+  days         Day[]
+  agendaItems  AgendaItem[]
+  accommodations Accommodation[]
+  transportLegs TransportLeg[]
+  tickets      Ticket[]
+  media        Media[]
+  reminders    Reminder[]
+  todos        Todo[]
+  files        File[]
+}
+
+model Day {
+  id          String   @id @default(cuid())
+  tripId      String
+  date        DateTime
+  title       String?
+  summary     String?
+  notes       String?
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  agendaItems AgendaItem[]
+  reminders   Reminder[]
+}
+
+model AgendaItem {
+  id          String   @id @default(cuid())
+  tripId      String
+  dayId       String
+  type        String
+  title       String
+  startTime   String?
+  endTime     String?
+  locationAddress String?
+  locationLat Float?
+  locationLng Float?
+  description String?
+  order       Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  day         Day      @relation(fields: [dayId], references: [id], onDelete: Cascade)
+}
+
+model Accommodation {
+  id          String   @id @default(cuid())
+  tripId      String
+  name        String
+  address     String?
+  lat         Float?
+  lng         Float?
+  checkInAt   DateTime?
+  checkOutAt  DateTime?
+  bookingRef  String?
+  bookingUrl  String?
+  hostName    String?
+  hostEmail   String?
+  hostPhone   String?
+  rules       String?
+  notes       String?
+  updatedAt   DateTime @updatedAt
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+model TransportLeg {
+  id         String   @id @default(cuid())
+  tripId     String
+  mode       String
+  from       String
+  to         String
+  departAt   DateTime?
+  arriveAt   DateTime?
+  bookingRef String?
+  notes      String?
+  updatedAt  DateTime @updatedAt
+  trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tickets    Ticket[]
+}
+
+model Ticket {
+  id           String   @id @default(cuid())
+  tripId       String
+  transportLegId String?
+  linkedType   String?
+  linkedId     String?
+  kind         String
+  label        String
+  value        String?
+  fileId       String?
+  updatedAt    DateTime @updatedAt
+  trip         Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  transportLeg TransportLeg? @relation(fields: [transportLegId], references: [id])
+}
+
+model Media {
+  id          String   @id @default(cuid())
+  tripId      String
+  fileId      String
+  caption     String?
+  linkedType  String?
+  linkedId    String?
+  createdAt   DateTime @default(now())
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  file        File     @relation(fields: [fileId], references: [id])
+}
+
+model Reminder {
+  id          String   @id @default(cuid())
+  tripId      String
+  dayId       String?
+  text        String
+  type        String
+  triggerHint String?
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  day         Day?     @relation(fields: [dayId], references: [id])
+}
+
+model Todo {
+  id        String    @id @default(cuid())
+  tripId    String
+  text      String
+  done      Boolean   @default(false)
+  dueDate   DateTime?
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  trip      Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+model File {
+  id           String   @id @default(cuid())
+  tripId       String
+  mimeType     String
+  size         Int
+  storageKey   String
+  originalName String
+  createdAt    DateTime @default(now())
+  trip         Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  media        Media[]
+}
